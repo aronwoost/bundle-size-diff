@@ -70,6 +70,9 @@ const generateData = (assets) => {
 
   console.log(message);
 
+  core.info("Message:");
+  core.info(message);
+
   core.setOutput("stats_message", message);
   core.setOutput("success", "true");
 };
