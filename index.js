@@ -2,6 +2,7 @@ const core = require("@actions/core");
 const fileSize = require("filesize");
 const path = require("path");
 const { getStatsDiff } = require("webpack-stats-diff");
+const { orderBy } = require("lodash");
 
 const getInputs = () => ({
   basePath: core.getInput("base_path"),
@@ -47,13 +48,29 @@ const generateData = (assets) => {
     );
   }
 
-  core.setOutput("base_file_size", stats.total.oldSize);
-  core.setOutput("base_file_string", fileSize(stats.total.oldSize));
-  core.setOutput("pr_file_size", stats.total.newSize);
-  core.setOutput("pr_file_string", fileSize(stats.total.newSize));
-  core.setOutput("diff_file_size", stats.total.diff);
-  core.setOutput("diff_file_string", fileSize(stats.total.diff));
-  core.setOutput("percent", stats.total.diffPercentage.toFixed(2));
+  const toBeReportedAssets = [
+    ...stats.added,
+    ...stats.bigger,
+    ...stats.smaller,
+    ...stats.sameSize,
+  ];
+
+  const assetsOrdered = orderBy(toBeReportedAssets, ["size"], ["desc"]);
+
+  let message = `| Asset | New size | Old size | Diff |
+| --- | --- | --- | --- |
+`;
+
+  assetsOrdered.forEach((asset) => {
+    message += `| ${asset.name} | ${fileSize(asset.newSize)} | ${fileSize(
+      asset.oldSize
+    )} | ${fileSize(asset.diff)} |
+`;
+  });
+
+  console.log(message);
+
+  core.setOutput("stats_message", message);
   core.setOutput("success", "true");
 };
 
